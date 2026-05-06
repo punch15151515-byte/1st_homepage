@@ -10,7 +10,7 @@
     <!-- End Google Tag Manager -->
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Muslim-Friendly Korea Guide 2026 | Halal Travel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -39,14 +39,41 @@
         .shape-circle { position: absolute; border-radius: 50%; }
         .hero-title { line-height: 0.9; letter-spacing: -0.05em; }
         .check-item { border-left: 6px solid #000; padding-left: 1.25rem; }
-        img { display: block; width: 100%; height: auto; }
+        img { display: block; width: 100%; height: auto; -webkit-backface-visibility: hidden; }
         .text-balance { text-wrap: balance; }
         
-        /* Carousel Styles */
-        .carousel-container { position: relative; width: 100%; overflow: hidden; border-radius: 1rem; }
-        .carousel-track { display: flex; height: 100%; transition: transform 0.5s ease-in-out; cursor: grab; }
-        .carousel-track:active { cursor: grabbing; }
-        .carousel-slide { min-width: 100%; height: 100%; flex-shrink: 0; }
+        /* Carousel Styles - iOS Optimized */
+        .carousel-container { 
+            position: relative; 
+            width: 100%; 
+            overflow: hidden; 
+            border-radius: 1rem; 
+            aspect-ratio: 16 / 9;
+            transform: translateZ(0); /* iOS hardware acceleration */
+        }
+        .carousel-track { 
+            display: flex; 
+            height: 100%; 
+            width: 100%;
+            transition: transform 0.5s ease-in-out; 
+            cursor: grab;
+            will-change: transform;
+        }
+        .carousel-slide { 
+            min-width: 100%; 
+            width: 100%;
+            height: 100%; 
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .carousel-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 가이드북 내용 전체를 보려면 contain 권장, 기존 느낌 유지는 cover */
+        }
         .dot.active { background-color: #3B82F6; width: 1.5rem; }
 
         /* Urgency Banner Styles */
@@ -62,8 +89,8 @@
 
     <!-- 긴급성 카운트다운 배너 -->
     <div id="urgencyBanner" class="urgency-bar bg-pointYellow text-dark flex items-center justify-center px-4 shadow-md">
-        <div class="flex items-center gap-2 md:gap-6 font-black uppercase text-[12px] md:text-lg tracking-tighter md:tracking-widest">
-            <span class="animate-pulse flex items-center gap-1 md:gap-2">
+        <div class="flex items-center gap-2 md:gap-6 font-black uppercase text-[14px] md:text-lg tracking-tighter md:tracking-widest">
+            <span class="animate-pulse flex items-center gap-2">
                 <span>🚨</span> LIMITED TIME OFFER
             </span>
             <span class="bg-red-600 text-white px-4 py-1.5 md:px-5 md:py-2 rounded-lg font-mono text-[16px] md:text-xl shadow-inner" id="countdownTimer">00:00:00:00</span>
@@ -124,16 +151,17 @@
                     </div>
                     
                     <div class="relative group">
-                        <div class="carousel-container aspect-video shadow-2xl border-4 border-primary/5 bg-gray-100" id="carousel">
+                        <!-- aspect-video 클래스를 유지하되 CSS로 강제 제어 -->
+                        <div class="carousel-container shadow-2xl border-4 border-primary/5 bg-gray-100" id="carousel">
                             <div class="carousel-track" id="carouselTrack">
                                 <div class="carousel-slide">
-                                    <img src="image1.jpg" alt="How to Use Naver Map Guide" class="w-full h-full object-cover">
+                                    <img src="image1.jpg" alt="How to Use Naver Map Guide">
                                 </div>
                                 <div class="carousel-slide">
-                                    <img src="image2.jpg" alt="Itaewon Halal Restaurant List" class="w-full h-full object-cover">
+                                    <img src="image2.jpg" alt="Itaewon Halal Restaurant List">
                                 </div>
                                 <div class="carousel-slide">
-                                    <img src="image3.jpg" alt="Yongsan & Ichon Halal Food Map" class="w-full h-full object-cover">
+                                    <img src="image3.jpg" alt="Yongsan & Ichon Halal Food Map">
                                 </div>
                             </div>
                         </div>
@@ -202,7 +230,6 @@
                 </div>
             </div>
             
-            <!-- 개인정보 보안 문구 추가 (Privacy Policy 제거 버전) -->
             <p class="mt-6 text-[11px] text-gray-400 font-medium leading-relaxed max-w-[280px] md:max-w-xs mx-auto text-center">
                 We use your information solely for marketing and guidebook purposes and do not sell it to third parties.
             </p>
@@ -270,16 +297,35 @@
         prevBtn?.addEventListener('click', () => { currentSlide = (currentSlide - 1 + totalSlides) % totalSlides; updateCarousel(); });
         dots.forEach((dot, index) => { dot.addEventListener('click', () => { currentSlide = index; updateCarousel(); }); });
 
+        // Touch Support - Improved for iOS
         let touchStartX = 0;
-        track.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
-        track.addEventListener('touchend', e => {
-            const touchEndX = e.changedTouches[0].screenX;
-            if (touchStartX - touchEndX > 50) currentSlide = (currentSlide + 1) % totalSlides;
-            else if (touchEndX - touchStartX > 50) currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
-            updateCarousel();
+        let isDragging = false;
+
+        track.addEventListener('touchstart', e => { 
+            touchStartX = e.changedTouches[0].screenX; 
+            isDragging = true;
         }, {passive: true});
 
-        setInterval(() => { currentSlide = (currentSlide + 1) % totalSlides; updateCarousel(); }, 5000);
+        track.addEventListener('touchend', e => {
+            if (!isDragging) return;
+            const touchEndX = e.changedTouches[0].screenX;
+            const diff = touchStartX - touchEndX;
+
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) currentSlide = (currentSlide + 1) % totalSlides;
+                else currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+                updateCarousel();
+            }
+            isDragging = false;
+        }, {passive: true});
+
+        // Auto-play
+        setInterval(() => { 
+            if (!isDragging) {
+                currentSlide = (currentSlide + 1) % totalSlides; 
+                updateCarousel(); 
+            }
+        }, 5000);
 
         // --- Lead Capture Logic ---
         const scriptURL = 'https://script.google.com/macros/s/AKfycbwqTdRob1Bg-BV-p8JYXhDCFfjlfY17d2z3UPco1xDPUhaPMRQ8Zp8i7zeN9uZtpQLH/exec';
