@@ -42,14 +42,15 @@
         img { display: block; width: 100%; height: auto; -webkit-backface-visibility: hidden; }
         .text-balance { text-wrap: balance; }
         
-        /* Carousel Styles - iOS Optimized */
+        /* Carousel Styles - iOS Optimized (Safari 대응) */
         .carousel-container { 
             position: relative; 
             width: 100%; 
             overflow: hidden; 
             border-radius: 1rem; 
             aspect-ratio: 16 / 9;
-            transform: translateZ(0); /* iOS hardware acceleration */
+            transform: translateZ(0); /* iOS 하드웨어 가속 */
+            background-color: #ffffff;
         }
         .carousel-track { 
             display: flex; 
@@ -68,11 +69,14 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            background-color: #ffffff; /* 이미지 여백 시 일체감 부여 */
         }
         .carousel-slide img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* 가이드북 내용 전체를 보려면 contain 권장, 기존 느낌 유지는 cover */
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain; /* 아이폰에서 잘림 방지를 위해 contain으로 변경 */
         }
         .dot.active { background-color: #3B82F6; width: 1.5rem; }
 
@@ -151,8 +155,7 @@
                     </div>
                     
                     <div class="relative group">
-                        <!-- aspect-video 클래스를 유지하되 CSS로 강제 제어 -->
-                        <div class="carousel-container shadow-2xl border-4 border-primary/5 bg-gray-100" id="carousel">
+                        <div class="carousel-container shadow-2xl border-4 border-primary/5 bg-white" id="carousel">
                             <div class="carousel-track" id="carouselTrack">
                                 <div class="carousel-slide">
                                     <img src="image1.jpg" alt="How to Use Naver Map Guide">
@@ -297,7 +300,6 @@
         prevBtn?.addEventListener('click', () => { currentSlide = (currentSlide - 1 + totalSlides) % totalSlides; updateCarousel(); });
         dots.forEach((dot, index) => { dot.addEventListener('click', () => { currentSlide = index; updateCarousel(); }); });
 
-        // Touch Support - Improved for iOS
         let touchStartX = 0;
         let isDragging = false;
 
@@ -319,7 +321,6 @@
             isDragging = false;
         }, {passive: true});
 
-        // Auto-play
         setInterval(() => { 
             if (!isDragging) {
                 currentSlide = (currentSlide + 1) % totalSlides; 
