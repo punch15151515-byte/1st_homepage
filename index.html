@@ -248,18 +248,24 @@
 
     <script>
         // --- Countdown Logic ---
-        const countdownTimer = document.getElementById('countdownTimer');
-        const endDate = new Date('2026-05-13T23:59:59').getTime();
+        // 수정: 가장 안정적인 Date 생성 방식 사용 (연, 월-1, 일, 시, 분, 초)
+        const endDate = new Date(2026, 4, 13, 12, 0, 0).getTime(); 
 
         function updateTimer() {
+            const timerElement = document.getElementById('countdownTimer');
+            if (!timerElement) return;
+
             const now = new Date().getTime();
             const distance = endDate - now;
 
             if (distance < 0) {
-                document.getElementById('urgencyBanner').classList.add('hidden');
-                document.body.style.paddingTop = "0";
-                const header = document.querySelector('header');
-                if (header) header.style.top = "0";
+                const banner = document.getElementById('urgencyBanner');
+                if (banner) {
+                    banner.classList.add('hidden');
+                    document.body.style.paddingTop = "0";
+                    const header = document.querySelector('header');
+                    if (header) header.style.top = "0";
+                }
                 return;
             }
 
@@ -268,12 +274,13 @@
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-            countdownTimer.innerText = 
+            timerElement.innerText = 
                 `${days.toString().padStart(2, '0')}D ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
-        setInterval(updateTimer, 1000);
+        // 초기 실행 및 인터벌 설정
         updateTimer();
+        setInterval(updateTimer, 1000);
 
         // --- Carousel Logic ---
         const track = document.getElementById('carouselTrack');
@@ -284,6 +291,7 @@
         const totalSlides = 3;
 
         function updateCarousel() {
+            if (!track) return;
             track.style.transform = `translateX(-${currentSlide * 100}%)`;
             dots.forEach((dot, index) => {
                 if (index === currentSlide) {
@@ -296,30 +304,32 @@
             });
         }
 
-        nextBtn?.addEventListener('click', () => { currentSlide = (currentSlide + 1) % totalSlides; updateCarousel(); });
-        prevBtn?.addEventListener('click', () => { currentSlide = (currentSlide - 1 + totalSlides) % totalSlides; updateCarousel(); });
+        if (nextBtn) nextBtn.addEventListener('click', () => { currentSlide = (currentSlide + 1) % totalSlides; updateCarousel(); });
+        if (prevBtn) prevBtn.addEventListener('click', () => { currentSlide = (currentSlide - 1 + totalSlides) % totalSlides; updateCarousel(); });
         dots.forEach((dot, index) => { dot.addEventListener('click', () => { currentSlide = index; updateCarousel(); }); });
 
         let touchStartX = 0;
         let isDragging = false;
 
-        track.addEventListener('touchstart', e => { 
-            touchStartX = e.changedTouches[0].screenX; 
-            isDragging = true;
-        }, {passive: true});
+        if (track) {
+            track.addEventListener('touchstart', e => { 
+                touchStartX = e.changedTouches[0].screenX; 
+                isDragging = true;
+            }, {passive: true});
 
-        track.addEventListener('touchend', e => {
-            if (!isDragging) return;
-            const touchEndX = e.changedTouches[0].screenX;
-            const diff = touchStartX - touchEndX;
+            track.addEventListener('touchend', e => {
+                if (!isDragging) return;
+                const touchEndX = e.changedTouches[0].screenX;
+                const diff = touchStartX - touchEndX;
 
-            if (Math.abs(diff) > 50) {
-                if (diff > 0) currentSlide = (currentSlide + 1) % totalSlides;
-                else currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
-                updateCarousel();
-            }
-            isDragging = false;
-        }, {passive: true});
+                if (Math.abs(diff) > 50) {
+                    if (diff > 0) currentSlide = (currentSlide + 1) % totalSlides;
+                    else currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+                    updateCarousel();
+                }
+                isDragging = false;
+            }, {passive: true});
+        }
 
         setInterval(() => { 
             if (!isDragging) {
@@ -332,41 +342,44 @@
         const scriptURL = 'https://script.google.com/macros/s/AKfycbwqTdRob1Bg-BV-p8JYXhDCFfjlfY17d2z3UPco1xDPUhaPMRQ8Zp8i7zeN9uZtpQLH/exec';
         const form = document.getElementById('leadForm');
         
-        form.addEventListener('submit', e => {
-            e.preventDefault();
-            const emailInput = document.getElementById('email');
-            const emailError = document.getElementById('emailError');
-            const btn = document.getElementById('submitBtn');
-            const btnText = document.getElementById('btnText');
-            const btnSpinner = document.getElementById('btnSpinner');
+        if (form) {
+            form.addEventListener('submit', e => {
+                e.preventDefault();
+                const emailInput = document.getElementById('email');
+                const emailError = document.getElementById('emailError');
+                const btn = document.getElementById('submitBtn');
+                const btnText = document.getElementById('btnText');
+                const btnSpinner = document.getElementById('btnSpinner');
 
-            const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-            if (!re.test(String(emailInput.value.trim()).toLowerCase())) {
-                emailError.classList.remove('hidden');
-                return;
-            }
-            
-            emailError.classList.add('hidden');
-            btn.disabled = true;
-            btnText.innerText = "Sending...";
-            btnSpinner.classList.remove('hidden');
-            
-            fetch(scriptURL, { method: 'POST', body: new FormData(form), mode: 'no-cors' })
-            .then(() => {
-                form.classList.add('hidden');
-                document.getElementById('successMsg').classList.remove('hidden');
-                if (!sessionStorage.getItem('SubmitFormTracked')) {
-                    window.dataLayer = window.dataLayer || [];
-                    window.dataLayer.push({ 'event': 'SubmitForm', 'form_id': 'leadForm_Halal_Guide', 'conversion_status': 'success' });
-                    sessionStorage.setItem('SubmitFormTracked', 'true');
+                // 더 안정적인 이메일 정규식으로 교체
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(emailInput.value.trim())) {
+                    if (emailError) emailError.classList.remove('hidden');
+                    return;
                 }
-            })
-            .catch(() => {
-                btn.disabled = false;
-                btnText.innerText = "Try Again";
-                btnSpinner.classList.add('hidden');
+                
+                if (emailError) emailError.classList.add('hidden');
+                btn.disabled = true;
+                btnText.innerText = "Sending...";
+                btnSpinner.classList.remove('hidden');
+                
+                fetch(scriptURL, { method: 'POST', body: new FormData(form), mode: 'no-cors' })
+                .then(() => {
+                    form.classList.add('hidden');
+                    document.getElementById('successMsg').classList.remove('hidden');
+                    if (!sessionStorage.getItem('SubmitFormTracked')) {
+                        window.dataLayer = window.dataLayer || [];
+                        window.dataLayer.push({ 'event': 'SubmitForm', 'form_id': 'leadForm_Halal_Guide', 'conversion_status': 'success' });
+                        sessionStorage.setItem('SubmitFormTracked', 'true');
+                    }
+                })
+                .catch(() => {
+                    btn.disabled = false;
+                    btnText.innerText = "Try Again";
+                    btnSpinner.classList.add('hidden');
+                });
             });
-        });
+        }
     </script>
 </body>
 </html>
